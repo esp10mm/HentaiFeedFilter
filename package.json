@@ -6,8 +6,8 @@
     "rss" : "*" ,
     "feedparser" : "*" ,
     "request" : "*"
-  }
+  },
   "scripts": {
-    "start": "node HentaiCustomFeed.js",
+    "start": "node HentaiCustomFeed.js"
   }
 }
