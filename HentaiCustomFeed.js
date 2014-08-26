@@ -3,7 +3,7 @@ var FeedParser = require('feedparser');
 var request = require('request');
 var express = require('express');
 var app = express();
-app.listen(process.env.PORT || 3000);
+app.listen(process.env.PORT || 80);
 
 var publish;
 
