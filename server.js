@@ -10,17 +10,27 @@ var publish;
 app.get('/',function(req,res){
 
   var tags = req.query.tags;
-  if(!Array.isArray(tags))
+  var authors = req.query.authors;
+
+  if(tags === undefined)
+    tags = [];
+  else if(!Array.isArray(tags))
     tags = [tags];
+
+  if(authors === undefined)
+    authors = [];
+  else if(!Array.isArray(authors))
+    authors = [authors];
+
   var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  console.log("Request from "+ip+" for " + tags);
-  fetch("http://xml.ehgt.org/ehg.xml",tags,function(){
+  console.log("Request from "+ip+" for " + tags + authors);
+  fetch("http://xml.ehgt.org/ehg.xml",authors,tags,function(){
       res.send(publish.xml());
   });
 
 })
 
-function fetch(feed,tags,callback) {
+function fetch(feed,authors,tags,callback) {
   // Define our streams
   var req = request(feed, {timeout: 10000, pool: false});
   req.setMaxListeners(50);
@@ -31,7 +41,7 @@ function fetch(feed,tags,callback) {
   var feedparser = new FeedParser();
 
   publish = new RSS({
-      title: 'e-hentai : ' + tags,
+      title: 'e-hentai : ' + tags + authors,
       description: 'Custom e-hentai feed',
       feed_url: 'http://example.com/rss.xml',
       author: 'aaadult',
@@ -55,19 +65,30 @@ function fetch(feed,tags,callback) {
       var url_s = item.link.split("/");
       var gid = url_s[4];
       var pt = url_s[5];
+
       var item_tags;
-      item.summary = item.summary.substring(6,item.summary.indexOf("Description"));
-      item_tags = item.summary.split(", ");
+      var item_author;
+      item_tags = item.summary.substring(6,item.summary.indexOf("Description")).split(", ");
+      item_author = item.author;
+
       var flag = true;
 
-      for(var k in tags){
-
-        if(item_tags.indexOf(tags[k])!=-1)
-          flag = flag && true;
-        else
-          flag = flag && false;
-
+      if(tags.length > 0){
+          for(var k in tags){
+            if(item_tags.indexOf(tags[k]) != -1)
+              flag = flag && true;
+            else
+              flag = flag && false;
+          }
       }
+
+      if(authors.length > 0){
+          if(authors.indexOf(item_author) != -1)
+            flag = flag && true;
+          else
+            flag = flag && false;
+      }
+
       if(flag){
         item.description += "<br><a href=http://g.e-hentai.org/hathdler.php?gid="+gid+"&t="+pt+">hathdl</a>";
         publish.item({
@@ -79,4 +100,5 @@ function fetch(feed,tags,callback) {
       }
     }
   });
+
 }
