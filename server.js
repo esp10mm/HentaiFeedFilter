@@ -23,7 +23,7 @@ app.get('/',function(req,res){
     authors = [authors];
 
   var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  console.log("Request from "+ip+" for " + tags + authors);
+
   fetch("http://xml.ehgt.org/ehg.xml",authors,tags,function(){
       res.send(publish.xml());
   });
