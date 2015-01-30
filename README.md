@@ -9,8 +9,8 @@ Run the service:
 		node server.js
 Then , you can subscribe the url like following with your rss reader:
 
-    http://yourdomain/tags?=tagname
-    http://yourdomain/authors?=authorname
+    http://yourdomain/?tags=tagname
+    http://yourdomain/?authors=authorname
 
 Demo:
 -----
