@@ -3,14 +3,19 @@ var FeedParser = require('feedparser');
 var request = require('request');
 var express = require('express');
 var app = express();
+
 app.listen(process.env.PORT || 80);
 
 var publish;
+var authors;
+var tags;
+var type;
 
-app.get('/',function(req,res){
+app.get('/',function(req, res){
 
-  var tags = req.query.tags;
-  var authors = req.query.authors;
+  tags = req.query.tags;
+  authors = req.query.authors;
+  type = req.query.type;
 
   if(tags === undefined)
     tags = [];
@@ -22,29 +27,28 @@ app.get('/',function(req,res){
   else if(!Array.isArray(authors))
     authors = [authors];
 
-  var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  if(type === undefined)
+    type = [];
+  else if(!Array.isArray(type))
+    type = [type];
 
-  fetch("http://xml.ehgt.org/ehg.xml",authors,tags,function(){
+  fetch("http://xml.ehgt.org/ehg.xml", function(){
       res.send(publish.xml());
   });
 
 })
 
-function fetch(feed,authors,tags,callback) {
-  // Define our streams
+function fetch(feed, callback) {
   var req = request(feed, {timeout: 10000, pool: false});
+
   req.setMaxListeners(50);
-  // Some feeds do not respond without user-agent and accept headers.
-  req.setHeader('user-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36')
-     .setHeader('accept', 'text/html,application/xhtml+xml');
 
   var feedparser = new FeedParser();
 
   publish = new RSS({
       title: 'e-hentai : ' + tags + authors,
       description: 'Custom e-hentai feed',
-      feed_url: 'http://example.com/rss.xml',
-      author: 'aaadult',
+      feed_url: 'http://xml.ehgt.org/ehg.xml',
       language: 'en',
       pubDate: new Date()
   });
@@ -59,23 +63,29 @@ function fetch(feed,authors,tags,callback) {
   feedparser.on('end', function(){
     callback();
   });
+
   feedparser.on('readable', function() {
     var item;
+
     while (item = this.read()) {
+
       var url_s = item.link.split("/");
       var gid = url_s[4];
       var pt = url_s[5];
 
       var item_tags;
       var item_author;
-      item_tags = item.summary.substring(6,item.summary.indexOf("Description")).split(", ");
-      item_author = item.author;
+
+      item_tags = item.summary.substring(6, item.summary.indexOf("Description")).toLowerCase().split(", ");
+      item_author = item.author.toLowerCase();
+      item_title = item.title.toLowerCase();
 
       var flag = true;
 
       if(tags.length > 0){
+
           for(var k in tags){
-            if(item_tags.indexOf(tags[k]) != -1)
+            if(item_tags.indexOf(tags[k].toLowerCase()) != -1)
               flag = flag && true;
             else
               flag = flag && false;
@@ -83,18 +93,33 @@ function fetch(feed,authors,tags,callback) {
       }
 
       if(authors.length > 0){
+          for(var k in authors)
+            authors[k] = authors[k].toLowerCase();
+
           if(authors.indexOf(item_author) != -1)
             flag = flag && true;
           else
             flag = flag && false;
       }
 
+      if(type.length > 0) {
+          for(var k in type) {
+              type[k] = type[k].toLowerCase();
+              
+              if(item_title.indexOf(type[k]) != -1)
+                  flag = flag && true;
+              else
+                flag = flag && false;
+          } 
+
+      }
+
       if(flag){
-        item.description += "<br><a href=http://g.e-hentai.org/hathdler.php?gid="+gid+"&t="+pt+">hathdl</a>";
+        item.description += "<br><a href=http://g.e-hentai.org/hathdler.php?gid="+gid+"&t="+pt+">hathdl</a><br>";
         publish.item({
           title:  item.title,
           description: item.description,
-          url: item.link, // link to the item
+          url: item.link, 
           date: item.date
         });
       }
