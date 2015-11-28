@@ -15,7 +15,9 @@ Then , you can subscribe the url like following with your rss reader:
 Demo:
 -----
     http://hentaifeedfilter.herokuapp.com/?tags=non-h
+    http://hentaifeedfilter.herokuapp.com/?type=doujinshi
+    http://hentaifeedfilter.herokuapp.com/?type=doujinshi&&tags=chinese
+    http://hentaifeedfilter.herokuapp.com/?type=manga&&tags=Taishinkokuoh%20Anton
 
-Note that the filter directly read E-Hentai rss source and response you with filtering result , so it might be no result.
-
-You can change the argument for demo site to try.
+The filter directly read E-Hentai rss source and response you with filtering result , so it might be no result.
+By the way, the "authors" parameter means the uploader of e-hentai not artist. If you want to subscribe by artist , you should add artist name to "tags" parameter.
