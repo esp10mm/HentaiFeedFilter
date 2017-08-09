@@ -6,16 +6,11 @@ var app = express();
 
 app.listen(process.env.PORT || 80);
 
-var publish;
-var authors;
-var tags;
-var type;
-
 app.get('/',function(req, res){
 
-  tags = req.query.tags;
-  authors = req.query.authors;
-  type = req.query.type;
+  var tags = req.query.tags;
+  var authors = req.query.authors;
+  var type = req.query.type;
 
   if(tags === undefined)
     tags = [];
@@ -32,20 +27,24 @@ app.get('/',function(req, res){
   else if(!Array.isArray(type))
     type = [type];
 
-  fetch("http://xml.ehgt.org/ehg.xml", function(){
+  tags = tags.map(v => v.replace('_', ' '));
+  authors = authors.map(v => v.replace('_', ' '));
+  type = type.map(v => v.replace('_', ' '));
+
+  fetch("http://xml.ehgt.org/ehg.xml", tags, authors, type, function(publish){
       res.send(publish.xml());
   });
 
 })
 
-function fetch(feed, callback) {
+function fetch(feed, tags, authors, type, callback) {
   var req = request(feed, {timeout: 10000, pool: false});
 
   req.setMaxListeners(50);
 
   var feedparser = new FeedParser();
 
-  publish = new RSS({
+  var publish = new RSS({
       title: 'e-hentai : ' + tags + authors,
       description: 'Custom e-hentai feed',
       feed_url: 'http://xml.ehgt.org/ehg.xml',
@@ -61,7 +60,7 @@ function fetch(feed, callback) {
   });
 
   feedparser.on('end', function(){
-    callback();
+    callback(publish);
   });
 
   feedparser.on('readable', function() {
@@ -76,42 +75,17 @@ function fetch(feed, callback) {
       var item_tags;
       var item_author;
 
-      item_tags = item.summary.substring(6, item.summary.indexOf("Description")).toLowerCase().split(", ");
-      item_author = item.author.toLowerCase();
-      item_title = item.title.toLowerCase();
+      item_tags =
+        item.summary.split(', ').map(v => v.replace(/\w*:/, '').toLowerCase());
 
       var flag = true;
 
       if(tags.length > 0){
-
           for(var k in tags){
-            if(item_tags.indexOf(tags[k].toLowerCase()) != -1)
-              flag = flag && true;
-            else
-              flag = flag && false;
+            flag = flag && item_tags.reduce((r, it) => (
+                r || it.indexOf(tags[k].toLowerCase()) !== -1
+            ), false)
           }
-      }
-
-      if(authors.length > 0){
-          for(var k in authors)
-            authors[k] = authors[k].toLowerCase();
-
-          if(authors.indexOf(item_author) != -1)
-            flag = flag && true;
-          else
-            flag = flag && false;
-      }
-
-      if(type.length > 0) {
-          for(var k in type) {
-              type[k] = type[k].toLowerCase();
-              
-              if(item_title.indexOf(type[k]) != -1)
-                  flag = flag && true;
-              else
-                flag = flag && false;
-          } 
-
       }
 
       if(flag){
